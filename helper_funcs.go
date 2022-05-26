@@ -100,6 +100,12 @@ func unmarshalHTTPResponse(response *http.Response) (*httpResponseBody, error) {
 	return responseBody, nil
 }
 
+// isPositiveStatusCode tells if the provided http status code implies successful operation.
+func isPositiveStatusCode(code int) bool {
+	return code < 300
+}
+
+// toOutgoingMessageRes converts the provided interface type into an *OutgoingMessageRes type.
 func toOutgoingMessageRes(data interface{}) (*OutgoingMessageRes, error) {
 	// Marshalling into json to later unmarshal into struct.
 	dataBytes, err := json.Marshal(data)

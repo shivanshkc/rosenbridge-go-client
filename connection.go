@@ -115,6 +115,11 @@ func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (
 		return nil, fmt.Errorf("failed to decode the response body: %w", err)
 	}
 
+	// If the request failed, we create the error from the custom code of the response.
+	if !isPositiveStatusCode(httpResponse.StatusCode) {
+		return nil, fmt.Errorf("request failed: %s", responseBody.CustomCode)
+	}
+
 	// Converting the responseBody.data type into the OutgoingMessageRes type.
 	outMessageRes, err := toOutgoingMessageRes(responseBody)
 	if err != nil {
