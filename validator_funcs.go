@@ -33,8 +33,11 @@ func checkConnectionParams(params *ConnectionParams) error {
 	if params.OnOutgoingMessageRes == nil {
 		return errors.New("outgoing message response handler cannot be nil")
 	}
-	if params.OnError == nil {
-		return errors.New("error handler cannot be nil")
+	if params.OnMessageError == nil {
+		return errors.New("message error handler cannot be nil")
+	}
+	if params.OnConnectionClosure == nil {
+		return errors.New("connection closure handler cannot be nil")
 	}
 
 	return nil

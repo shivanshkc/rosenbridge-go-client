@@ -42,6 +42,21 @@ func NewConnection(ctx context.Context, params *ConnectionParams) (*Connection, 
 
 // Connect establishes the websocket connection with Rosenbridge.
 func (c *Connection) Connect(ctx context.Context) error {
+	// Getting the REST endpoint.
+	endpoint := rbGetConnectionURL(getRandomAddr(c.params.HTTPAddr), c.params.ClientID)
+
+	// Establishing websocket connection.
+	underlyingConn, response, err := websocket.DefaultDialer.Dial(endpoint, nil)
+	if err != nil {
+		return fmt.Errorf("error in websocket.Dial: %w", err)
+	}
+	defer func() { _ = response.Body.Close() }()
+
+	// Persisting the connection.
+	c.underlyingConnection = underlyingConn
+	// Listening to websocket messages.
+	go c.initListener()
+
 	return nil
 }
 
@@ -66,4 +81,10 @@ func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (
 // function.
 func (c *Connection) SendMessageAsync(ctx context.Context, req *OutgoingMessageReq) error {
 	return nil
+}
+
+// initListener sets up a loop that keeps listening to the websocket messages and calls appropriate handlers.
+//
+// This method blocks and should be called from within a goroutine.
+func (c *Connection) initListener() {
 }
