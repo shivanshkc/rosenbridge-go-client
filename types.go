@@ -18,10 +18,8 @@ type ConnectionParams struct {
 	OnIncomingMessageReq OnIncomingMessageReqFunc
 	// OnOutgoingMessageRes is invoked when an outgoing message response is received from Rosenbridge.
 	OnOutgoingMessageRes OnOutgoingMessageResFunc
-	// OnMessageError is invoked whenever an error occurs during any step of the message processing.
-	OnMessageError OnMessageErrorFunc
-	// OnConnectionClosure is invoked when the connection closes.
-	OnConnectionClosure OnConnectionClosureFunc
+	// OnError is invoked whenever an error occurs in the websocket connection or any step of the message processing.
+	OnError OnErrorFunc
 }
 
 // IncomingMessageReq is the schema for an incoming message from Rosenbridge, originally sent by another client.
@@ -68,13 +66,13 @@ type OnIncomingMessageReqFunc func(ctx context.Context, req *IncomingMessageReq)
 // OnOutgoingMessageResFunc is the type of function that handles an outgoing message response from Rosenbridge.
 type OnOutgoingMessageResFunc func(ctx context.Context, res *OutgoingMessageRes)
 
-// OnMessageErrorFunc is the type of function that handles any errors occurred during message processing.
-// The disputed message and the error is provided as an argument.
-type OnMessageErrorFunc func(ctx context.Context, message []byte, err error)
-
-// OnConnectionClosureFunc is the type of function that handles connection closures.
-// The "err" argument is the result of a recover call.
-type OnConnectionClosureFunc func(ctx context.Context, err interface{})
+// OnErrorFunc is the type of function that handles any errors occurred in the websocket connection or message handling.
+//
+// The disputed message and the error is provided as an argument for further handling.
+//
+// If the error is a connection closure error, the message argument will be nil and the "err" argument will satisfy the
+// errors.Is(err, ErrConnectionClosure) call.
+type OnErrorFunc func(ctx context.Context, message []byte, err error)
 
 // Persistence is a type for the various message persistence criterion provided by Rosenbridge.
 type Persistence string
