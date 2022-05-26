@@ -3,6 +3,7 @@ package rbclient
 import (
 	"context"
 	"fmt"
+	"net/http"
 
 	"github.com/gorilla/websocket"
 )
@@ -15,6 +16,8 @@ type Connection struct {
 
 	// underlyingConnection is the low-level websocket connection.
 	underlyingConnection *websocket.Conn
+	// httpClients maps addresses to their HTTP clients.
+	httpClients map[string]*http.Client
 }
 
 // NewConnection provides a new connection object.
@@ -44,6 +47,9 @@ func (c *Connection) Connect(ctx context.Context) error {
 
 // Disconnect closes the websocket connection with Rosenbridge.
 func (c *Connection) Disconnect(ctx context.Context) error {
+	if err := c.underlyingConnection.Close(); err != nil {
+		return fmt.Errorf("failed to close underlying connection: %w", err)
+	}
 	return nil
 }
 

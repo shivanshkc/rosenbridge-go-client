@@ -5,6 +5,7 @@ import (
 )
 
 // checkConnectionParams checks if the provided ConnectionParams are valid.
+// TODO: We should have more aggressive validations rather than just nil or empty checks.
 func checkConnectionParams(params *ConnectionParams) error {
 	// The params itself should not be nil.
 	if params == nil {
