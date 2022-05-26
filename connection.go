@@ -2,6 +2,7 @@ package rbclient
 
 import (
 	"context"
+	"fmt"
 
 	"github.com/gorilla/websocket"
 )
@@ -24,7 +25,16 @@ type Connection struct {
 // As long as the Connect method is not called, the websocket connection will not be made, and the client will remain
 // OFFLINE (assuming they do not have any other connections).
 func NewConnection(ctx context.Context, params *ConnectionParams) (*Connection, error) {
-	return nil, nil
+	// Validating the external input.
+	if err := checkConnectionParams(params); err != nil {
+		return nil, fmt.Errorf("invalid connection params: %w", err)
+	}
+
+	// Creating and returning the connection object.
+	return &Connection{
+		params:               params,
+		underlyingConnection: nil,
+	}, nil
 }
 
 // Connect establishes the websocket connection with Rosenbridge.
