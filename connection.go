@@ -1,10 +1,12 @@
 package rbclient
 
 import (
+	"bytes"
 	"context"
-	"errors"
+	"encoding/json"
 	"fmt"
 	"net/http"
+	"sync"
 
 	"github.com/gorilla/websocket"
 )
@@ -17,8 +19,11 @@ type Connection struct {
 
 	// underlyingConnection is the low-level websocket connection.
 	underlyingConnection *websocket.Conn
+
 	// httpClients maps addresses to their HTTP clients.
 	httpClients map[string]*http.Client
+	// httpClientsMutex makes sure that httpClients is thread safe to use.
+	httpClientsMutex *sync.RWMutex
 }
 
 // NewConnection provides a new connection object.
@@ -38,6 +43,8 @@ func NewConnection(ctx context.Context, params *ConnectionParams) (*Connection, 
 	return &Connection{
 		params:               params,
 		underlyingConnection: nil,
+		httpClients:          map[string]*http.Client{},
+		httpClientsMutex:     &sync.RWMutex{},
 	}, nil
 }
 
@@ -72,7 +79,54 @@ func (c *Connection) Disconnect(ctx context.Context) error {
 // SendMessage sends a new message over Rosenbridge synchronously.
 // Unlike SendMessageAsync, it blocks until Rosenbridge returns the OutgoingMessageRes.
 func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (*OutgoingMessageRes, error) {
-	return nil, errors.New("todo")
+	// Setting the type of the message.
+	req.Type = typeOutgoingMessageReq
+
+	// Marshalling request to byte array.
+	requestBytes, err := json.Marshal(req)
+	if err != nil {
+		return nil, fmt.Errorf("failed to marshal request: %w", err)
+	}
+	// Converting the request byte array to io.Reader for the http client.
+	bodyReader := bytes.NewReader(requestBytes)
+
+	// Getting a random address.
+	randomAddr := getRandomAddr(c.params.HTTPAddr)
+	// Getting an HTTP client for this address.
+	httpClient := c.httpClientForAddr(randomAddr)
+
+	// Getting the REST endpoint.
+	endpoint := rbPostMessageURL(randomAddr, c.params.ClientID)
+	// Forming the HTTP request.
+	httpRequest, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bodyReader)
+	if err != nil {
+		return nil, fmt.Errorf("failed to form the http request: %w", err)
+	}
+
+	// Executing the request.
+	httpResponse, err := httpClient.Do(httpRequest)
+	if err != nil {
+		return nil, fmt.Errorf("failed to execute http request: %w", err)
+	}
+
+	// Getting the response body.
+	responseBody, err := unmarshalHTTPResponse(httpResponse)
+	if err != nil {
+		return nil, fmt.Errorf("failed to decode the response body: %w", err)
+	}
+
+	// Converting the responseBody.data type into the OutgoingMessageRes type.
+	outMessageRes, err := toOutgoingMessageRes(responseBody)
+	if err != nil {
+		return nil, fmt.Errorf("failed to convert http response body to outgoing message response: %w", err)
+	}
+
+	// If the http response data did not contain a request ID, we fetch it from the headers.
+	if outMessageRes.RequestID == "" {
+		outMessageRes.RequestID = httpResponse.Header.Get("x-request-id")
+	}
+
+	return outMessageRes, nil
 }
 
 // SendMessageAsync send a new message over Rosenbridge asynchronously.
@@ -81,6 +135,20 @@ func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (
 // The OutgoingMessageRes for messages sent by this method can be monitored by the OnOutgoingMessageResponse
 // function.
 func (c *Connection) SendMessageAsync(ctx context.Context, req *OutgoingMessageReq) error {
+	// Setting the type of the message.
+	req.Type = typeOutgoingMessageReq
+
+	// Marshalling request to byte array.
+	requestBytes, err := json.Marshal(req)
+	if err != nil {
+		return fmt.Errorf("failed to marshal request: %w", err)
+	}
+
+	// Writing the message to the connection.
+	if err := c.underlyingConnection.WriteMessage(websocket.TextMessage, requestBytes); err != nil {
+		return fmt.Errorf("failed to write message: %w", err)
+	}
+
 	return nil
 }
 
@@ -150,4 +218,25 @@ main:
 		default:
 		}
 	}
+}
+
+// httpClientForAddr provides an HTTP client for the given address.
+//
+// First, it tries to find a client in the httpClients map which is persisted in the Connection struct.
+// If a client is not found, a new one is created, persisted and returned.
+//
+// It is safe for concurrent use.
+func (c *Connection) httpClientForAddr(addr string) *http.Client {
+	// Ensuring thread safety.
+	c.httpClientsMutex.Lock()
+	defer c.httpClientsMutex.Unlock()
+
+	// Checking if the HTTP client is already present for this addr, otherwise creating one.
+	httpClient, exists := c.httpClients[addr]
+	if !exists {
+		httpClient = &http.Client{}
+		c.httpClients[addr] = httpClient
+	}
+
+	return httpClient
 }

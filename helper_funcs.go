@@ -3,7 +3,9 @@ package rbclient
 import (
 	"encoding/json"
 	"fmt"
+	"io/ioutil"
 	"math/rand"
+	"net/http"
 	"strings"
 )
 
@@ -16,6 +18,17 @@ func rbGetConnectionURL(baseURL string, clientID string) string {
 
 	// Creating and returning the URL.
 	return fmt.Sprintf("%s/api/clients/%s/connections", baseURL, clientID)
+}
+
+// rbPostMessageURL provides the URL for the Post-Message API of Rosenbridge.
+func rbPostMessageURL(baseURL string, clientID string) string {
+	// Removing troublemaker suffixes.
+	baseURL = strings.TrimSuffix(baseURL, "/api/")
+	baseURL = strings.TrimSuffix(baseURL, "/api")
+	baseURL = strings.TrimSuffix(baseURL, "/")
+
+	// Creating and returning the URL.
+	return fmt.Sprintf("%s/api/clients/%s/messages", baseURL, clientID)
 }
 
 // getRandomAddr provides a random address from the list of provided addresses.
@@ -65,4 +78,40 @@ func unmarshalOutgoingMessageRes(message []byte) (*OutgoingMessageRes, error) {
 		return nil, fmt.Errorf("error in json.Unmarshal call: %w", err)
 	}
 	return outMessageResp, nil
+}
+
+// unmarshalHTTPResponse decodes a http response body into its struct.
+func unmarshalHTTPResponse(response *http.Response) (*httpResponseBody, error) {
+	// Closing the body upon function return.
+	defer func() { _ = response.Body.Close() }()
+
+	// Reading into a byte slice.
+	bodyBytes, err := ioutil.ReadAll(response.Body)
+	if err != nil {
+		return nil, fmt.Errorf("failed to read response body: %w", err)
+	}
+
+	// Unmarshalling into the struct.
+	responseBody := &httpResponseBody{}
+	if err := json.Unmarshal(bodyBytes, responseBody); err != nil {
+		return nil, fmt.Errorf("failed to unmarshal response body: %w", err)
+	}
+
+	return responseBody, nil
+}
+
+func toOutgoingMessageRes(data interface{}) (*OutgoingMessageRes, error) {
+	// Marshalling into json to later unmarshal into struct.
+	dataBytes, err := json.Marshal(data)
+	if err != nil {
+		return nil, fmt.Errorf("error in json.Marshal call: %w", err)
+	}
+
+	// Unmarshalling into struct.
+	outMessageRes := &OutgoingMessageRes{}
+	if err := json.Unmarshal(dataBytes, outMessageRes); err != nil {
+		return nil, fmt.Errorf("error in json.Unmarshal call: %w", err)
+	}
+
+	return outMessageRes, nil
 }

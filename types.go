@@ -26,40 +26,58 @@ type ConnectionParams struct {
 
 // IncomingMessageReq is the schema for an incoming message from Rosenbridge, originally sent by another client.
 type IncomingMessageReq struct {
+	// RequestID is the identifier of this request.
+	RequestID string `json:"request_id"`
+
 	// SenderID is the ID of the client who sent the message.
-	SenderID string
+	SenderID string `json:"sender_id"`
 	// Message is the main message content.
-	Message []byte
+	Message []byte `json:"message"`
 	// Persist is the persistence criteria of this message set by the sender.
-	Persist Persistence
+	Persist Persistence `json:"persist"`
+
+	// Type is set overridden by the package internally. So, the caller should not populate it.
+	Type string `json:"type"`
 }
 
 // OutgoingMessageReq is the schema for an outgoing message to Rosenbridge.
 type OutgoingMessageReq struct {
+	// RequestID is the identifier of this request. It also correlates it to its future response.
+	RequestID string `json:"request_id"`
+
 	// ReceiverIDs is the list of IDs of clients who are intended to receive this message.
-	ReceiverIDs []string
+	ReceiverIDs []string `json:"receiver_ids"`
 	// Message is the main message content.
-	Message []byte
+	Message []byte `json:"message"`
 	// Persist is the persistence criteria of this message set by the sender.
-	Persist Persistence
+	Persist Persistence `json:"persist"`
+
+	// Type is set overridden by the package internally. So, the caller should not populate it.
+	Type string `json:"type"`
 }
 
 // OutgoingMessageRes is the response of an OutgoingMessageReq.
 // It tells which clients successfully received the message and which did not, along with the reason.
 type OutgoingMessageRes struct {
+	// RequestID is the identifier of this response. It also correlates it to the original request.
+	RequestID string `json:"request_id"`
+
 	// Code is the global response code. For example: OK
-	Code string
+	Code string `json:"code"`
 	// Reason is the loggable or human-readable reason for failures, if any.
-	Reason string
+	Reason string `json:"reason"`
 	// PerReceiver is the response data per receiver.
 	PerReceiver []struct {
 		// ReceiverID is the ID of the receiver to whom this slice element belongs.
-		ReceiverID string
+		ReceiverID string `json:"receiver_id"`
 		// Code is the response code for this receiver.
-		Code string
+		Code string `json:"code"`
 		// Reason is the loggable or human-readable reason for failures, if any, for this receiver.
-		Reason string
-	}
+		Reason string `json:"reason"`
+	} `json:"per_receiver"`
+
+	// Type is set overridden by the package internally. So, the caller should not populate it.
+	Type string `json:"type"`
 }
 
 // OnIncomingMessageReqFunc is the type of function that handles an incoming message request from Rosenbridge.
@@ -89,3 +107,10 @@ const (
 	// IfOffline persists the message only if the receiver is offline.
 	IfOffline Persistence = "if_offline"
 )
+
+// httpResponseBody is the schema of a response body received from Rosenbridge.
+type httpResponseBody struct {
+	StatusCode int         `json:"status_code"`
+	CustomCode string      `json:"custom_code"`
+	Data       interface{} `json:"data"`
+}
