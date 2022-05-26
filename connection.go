@@ -2,16 +2,39 @@ package rbclient
 
 import (
 	"context"
+
+	"github.com/gorilla/websocket"
 )
 
 // Connection represents a connection with the Rosenbridge cluster.
 // Use the available methods on this struct to interact with Rosenbridge.
-type Connection struct{}
+type Connection struct {
+	// params are the ConnectionParams that were used to make this connection.
+	params *ConnectionParams
 
-// NewConnection provides a new connection with Rosenbridge.
-// This connection can be used to send requests to Rosenbridge and also to listen to all responses.
+	// underlyingConnection is the low-level websocket connection.
+	underlyingConnection *websocket.Conn
+}
+
+// NewConnection provides a new connection object.
+//
+// Note that this function does not automatically connect the websocket. For that, the Connect method has to be called
+// explicitly. This is because some Rosenbridge operations do not require a websocket connection.
+//
+// As long as the Connect method is not called, the websocket connection will not be made, and the client will remain
+// OFFLINE (assuming they do not have any other connections).
 func NewConnection(ctx context.Context, params *ConnectionParams) (*Connection, error) {
 	return nil, nil
+}
+
+// Connect establishes the websocket connection with Rosenbridge.
+func (c *Connection) Connect(ctx context.Context) error {
+	return nil
+}
+
+// Disconnect closes the websocket connection with Rosenbridge.
+func (c *Connection) Disconnect(ctx context.Context) error {
+	return nil
 }
 
 // SendMessage sends a new message over Rosenbridge synchronously.
@@ -26,10 +49,5 @@ func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (
 // The OutgoingMessageRes for messages sent by this method can be monitored by the OnOutgoingMessageResponse
 // function.
 func (c *Connection) SendMessageAsync(ctx context.Context, req *OutgoingMessageReq) error {
-	return nil
-}
-
-// Disconnect closes the connection.
-func (c *Connection) Disconnect(ctx context.Context) error {
 	return nil
 }
