@@ -19,6 +19,8 @@ type ConnectionParams struct {
 	// OnOutgoingMessageRes is invoked when an outgoing message response is received from Rosenbridge.
 	OnOutgoingMessageRes OnOutgoingMessageResFunc
 	// OnError is invoked whenever an error occurs in the websocket connection or any step of the message processing.
+	//
+	// When the connection is gracefully closed, OnError is invoked with a nil message and a nil error.
 	OnError OnErrorFunc
 }
 
@@ -72,6 +74,8 @@ type OnOutgoingMessageResFunc func(ctx context.Context, res *OutgoingMessageRes)
 //
 // If the error is a connection closure error, the message argument will be nil and the "err" argument will satisfy the
 // errors.Is(err, ErrConnectionClosure) call.
+//
+// If the connection closes gracefully, then the OnError is invoked with a nil message and a nil error.
 type OnErrorFunc func(ctx context.Context, message []byte, err error)
 
 // Persistence is a type for the various message persistence criterion provided by Rosenbridge.

@@ -2,6 +2,7 @@ package rbclient
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"net/http"
 
@@ -55,7 +56,7 @@ func (c *Connection) Connect(ctx context.Context) error {
 	// Persisting the connection.
 	c.underlyingConnection = underlyingConn
 	// Listening to websocket messages.
-	go c.initListener()
+	go c.initListener(ctx)
 
 	return nil
 }
@@ -71,7 +72,7 @@ func (c *Connection) Disconnect(ctx context.Context) error {
 // SendMessage sends a new message over Rosenbridge synchronously.
 // Unlike SendMessageAsync, it blocks until Rosenbridge returns the OutgoingMessageRes.
 func (c *Connection) SendMessage(ctx context.Context, req *OutgoingMessageReq) (*OutgoingMessageRes, error) {
-	return nil, nil
+	return nil, errors.New("todo")
 }
 
 // SendMessageAsync send a new message over Rosenbridge asynchronously.
@@ -86,5 +87,67 @@ func (c *Connection) SendMessageAsync(ctx context.Context, req *OutgoingMessageR
 // initListener sets up a loop that keeps listening to the websocket messages and calls appropriate handlers.
 //
 // This method blocks and should be called from within a goroutine.
-func (c *Connection) initListener() {
+func (c *Connection) initListener(ctx context.Context) {
+	// Starting a loop to process all websocket communication.
+	// This loop panics when the connection is closed.
+main:
+	for {
+		wsMessageType, message, err := c.underlyingConnection.ReadMessage()
+		if err != nil {
+			// Forming the wrapped error.
+			err = fmt.Errorf("%w: error in ReadMessage: %v", ErrConnectionClosure, err)
+			// Invoking the OnError function with the formed error.
+			c.params.OnError(ctx, nil, err)
+			// Breaking out of the loop.
+			break main
+		}
+
+		// Handling different websocket message types.
+		switch wsMessageType {
+		case websocket.CloseMessage:
+			// This means graceful connection closure.
+			c.params.OnError(ctx, nil, nil)
+			// Breaking out of the loop.
+			break main
+		case websocket.TextMessage:
+			messageType, err := unmarshalMessageType(message)
+			if err != nil {
+				// Forming the wrapped error.
+				err = fmt.Errorf("%w: %v", ErrUnknownMessageType, err)
+				// Invoking the OnError function with the formed error.
+				c.params.OnError(ctx, message, err)
+				// Continuing with the loop.
+				continue main
+			}
+
+			// Handling different message types.
+			switch messageType {
+			case typeIncomingMessageReq:
+				// Decoding the message into the IncomingMessageReq type.
+				inMessageReq, err := unmarshalIncomingMessageReq(message)
+				if err != nil {
+					c.params.OnError(ctx, message, fmt.Errorf("failed to decode incoming message req: %w", err))
+					continue main
+				}
+
+				// Invoking the handler.
+				c.params.OnIncomingMessageReq(ctx, inMessageReq)
+			case typeOutgoingMessageRes:
+				outMessageRes, err := unmarshalOutgoingMessageRes(message)
+				if err != nil {
+					c.params.OnError(ctx, message, fmt.Errorf("failed to decode outgoing message res: %w", err))
+					continue main
+				}
+
+				// Invoking the handler.
+				c.params.OnOutgoingMessageRes(ctx, outMessageRes)
+			default:
+				// Unknown message types are simply ignored.
+			}
+		case websocket.BinaryMessage:
+		case websocket.PingMessage:
+		case websocket.PongMessage:
+		default:
+		}
+	}
 }
