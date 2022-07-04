@@ -1,3 +1,20 @@
+# [2.0.0](https://github.com/shivanshkc/rosenbridge-go-client/compare/v1.0.0...v2.0.0) (2022-07-04)
+
+
+### Bug Fixes
+
+* **core:** fix package path ([5d30a64](https://github.com/shivanshkc/rosenbridge-go-client/commit/5d30a64a74c21f820285f4173c9597e43bdb88e5))
+
+
+### Features
+
+* **core:** change as per rosenbridge api ([764c5b3](https://github.com/shivanshkc/rosenbridge-go-client/commit/764c5b3a09035542323a31ef3e4eff725a009640))
+
+
+### BREAKING CHANGES
+
+* **core:** api restructure
+
 # [1.0.0](https://github.com/shivanshkc/rosenbridge-go-client/compare/v0.1.0...v1.0.0) (2022-05-26)
 
 
