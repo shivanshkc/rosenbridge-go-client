@@ -1,4 +1,4 @@
-module github.com/shivanshkc/rosenbridge-go-client
+module github.com/shivanshkuc/rosenbridge-go-client
 
 go 1.17
 
