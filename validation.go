@@ -1,12 +1,12 @@
-package rbclient
+package rosenbridge
 
 import (
 	"errors"
 )
 
-// checkConnectionParams checks if the provided ConnectionParams are valid.
+// checkBridgeParams checks if the provided BridgeParams are valid.
 // TODO: We should have more aggressive validations rather than just nil or empty checks.
-func checkConnectionParams(params *ConnectionParams) error {
+func checkBridgeParams(params *BridgeParams) error {
 	// The params itself should not be nil.
 	if params == nil {
 		return errors.New("connection params cannot be nil")
@@ -18,12 +18,15 @@ func checkConnectionParams(params *ConnectionParams) error {
 		return errors.New("client id cannot be empty")
 	}
 
-	// The addresses should not be empty.
-	if len(params.HTTPAddr) == 0 {
-		return errors.New("http address list cannot be empty")
+	// The address list should not be empty.
+	if len(params.Addresses) == 0 {
+		return errors.New("address list cannot be empty")
 	}
-	if len(params.WebsocketAddr) == 0 {
-		return errors.New("websocket address list cannot be empty")
+	// An address should not be empty.
+	for _, addr := range params.Addresses {
+		if len(addr) == 0 {
+			return errors.New("address cannot be empty")
+		}
 	}
 
 	// The handlers should not be nil.
@@ -33,8 +36,8 @@ func checkConnectionParams(params *ConnectionParams) error {
 	if params.OnOutgoingMessageRes == nil {
 		return errors.New("outgoing message response handler cannot be nil")
 	}
-	if params.OnError == nil {
-		return errors.New("error handler cannot be nil")
+	if params.OnErrorRes == nil {
+		return errors.New("error response handler cannot be nil")
 	}
 
 	return nil
