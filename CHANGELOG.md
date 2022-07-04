@@ -1,3 +1,11 @@
+## [2.0.1](https://github.com/shivanshkc/rosenbridge-go-client/compare/v2.0.0...v2.0.1) (2022-07-04)
+
+
+### Bug Fixes
+
+* **core:** ignore .idea in git ([29f4d95](https://github.com/shivanshkc/rosenbridge-go-client/commit/29f4d952ac51f84ecda77d40c464c4acdf4480d1))
+* **core:** remove .idea from vc ([cb6e616](https://github.com/shivanshkc/rosenbridge-go-client/commit/cb6e616567a5665476d3cc9d8767fe4756ec04f6))
+
 # [2.0.0](https://github.com/shivanshkc/rosenbridge-go-client/compare/v1.0.0...v2.0.0) (2022-07-04)
 
 
