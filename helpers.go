@@ -7,6 +7,7 @@ import (
 	"io"
 	"math/rand"
 	"strings"
+	"time"
 )
 
 func formatBaseURL(addr string, enableTLS bool, isHTTP bool) string {
@@ -37,6 +38,7 @@ func formatBaseURL(addr string, enableTLS bool, isHTTP bool) string {
 // getRandomString provides a random value from the provided slice.
 func getRandomString(values []string) string {
 	// Generating a random index.
+	rand.Seed(time.Now().UnixNano())
 	// nolint:gosec // gosec recommends the use of crypto/rand instead of math/rand but IMO, that's not required.
 	randIndex := rand.Intn(len(values))
 	return values[randIndex]
