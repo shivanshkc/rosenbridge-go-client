@@ -44,7 +44,7 @@ func NewBridge(params *BridgeParams) (*Bridge, error) {
 func (b *Bridge) Connect() error {
 	// Getting a random address for connection.
 	addr := formatBaseURL(getRandomString(b.params.Addresses), b.params.EnableTLS, false)
-	addr = fmt.Sprintf("%s/api/bridge", addr)
+	addr = fmt.Sprintf("%s/api/bridge/new", addr)
 
 	// HTTP request headers.
 	headers := http.Header{}
